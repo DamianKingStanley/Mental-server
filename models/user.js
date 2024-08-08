@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
-const userSchema = mongoose.Schema(
-  {
+const userSchema = mongoose.Schema({
     userId: { type: String },
     fullname: { type: String, required: true },
     username: { type: String, required: true },
@@ -9,12 +8,11 @@ const userSchema = mongoose.Schema(
     phoneNumber: { type: String },
     location: { type: String },
     profilePicture: { type: String },
-    followers: { type: Number, default: 0 },
-    following: { type: Number, default: 0 },
-  },
-  {
+    verified: { type: Boolean, default: false },
+    resetToken: { type: String },
+    resetTokenExpires: { type: Date },
+}, {
     timestamps: true,
-  }
-);
+});
 
 export default mongoose.model("user", userSchema);
