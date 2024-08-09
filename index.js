@@ -4,7 +4,6 @@ import cors from "cors";
 import morgan from "morgan";
 import dotenv from "dotenv";
 import axios from "axios";
-import { GoogleGenerativeAI } from "@google/generative-ai"; // Import GoogleGenerativeAI
 import userRoute from "./routes/userRoute.js";
 import chatRoute from "./routes/chatRoute.js";
 
