@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import axios from "axios";
 import userRoute from "./routes/userRoute.js";
 import chatRoute from "./routes/chatRoute.js";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 dotenv.config();
 const app = express();
