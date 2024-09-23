@@ -23,6 +23,12 @@ export const userRegister = async(req, res) => {
             username: userInfo.username,
             email: userInfo.email,
             password: hashPassword,
+            dob: userInfo.dob,
+            age: userInfo.age,
+            gender: userInfo.gender,
+            university: userInfo.university,
+            faculty: userInfo.faculty,
+            department: userInfo.department,
         });
 
         console.log(userInfo);

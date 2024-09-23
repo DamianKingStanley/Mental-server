@@ -7,6 +7,7 @@ import axios from "axios";
 import userRoute from "./routes/userRoute.js";
 import chatRoute from "./routes/chatRoute.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import Chat from "./models/chat.js";
 
 dotenv.config();
 const app = express();
@@ -30,70 +31,88 @@ const PORT = process.env.PORT || 5000;
 const MONGODB_URL = process.env.MONGODB_URL;
 
 mongoose
-  .connect(MONGODB_URL)
-  .then(() =>
-    app.listen(PORT, () => console.log(`Server is running on port ${PORT}`))
-  )
-  .catch((error) => console.error("Failed to connect to MongoDB:", error));
+    .connect(MONGODB_URL)
+    .then(() =>
+        app.listen(PORT, () => console.log(`Server is running on port ${PORT}`))
+    )
+    .catch((error) => console.error("Failed to connect to MongoDB:", error));
 
 app.get("/", (req, res) => {
-  res.json({ message: "Welcome" });
+    res.json({ message: "Welcome" });
 });
 
-app.post("/api/chat", async (req, res) => {
-  const userInput = req.body.input;
+// app.post("/api/chat", async(req, res) => {
+//     const userInput = req.body.input;
 
-  if (!userInput) {
-    return res.status(400).json({ error: "Input is required" });
-  }
+//     if (!userInput) {
+//         return res.status(400).json({ error: "Input is required" });
+//     }
 
-  try {
-    const response = await axios.post(
-      api_url,
-      {
-        inputs: userInput,
-        options: { use_cache: false },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${api_key}`,
-        },
-      }
-    );
+//     try {
+//         const response = await axios.post(
+//             api_url, {
+//                 inputs: userInput,
+//                 options: { use_cache: false },
+//             }, {
+//                 headers: {
+//                     Authorization: `Bearer ${api_key}`,
+//                 },
+//             }
+//         );
 
-    console.log("Full response from API:", response.data); // Log full response
-    const generatedText =
-      response.data[0]?.generated_text || "No response text found";
+//         console.log("Full response from API:", response.data); // Log full response
+//         const generatedText =
+//             response.data[0] ? .generated_text || "No response text found";
 
-    console.log("Generated text to send to frontend:", generatedText); // Log the text being sent
-    res.json({ generated_text: generatedText });
-  } catch (error) {
-    console.error("Backend error:", error); // Log error details
-    res
-      .status(error.response ? error.response.status : 500)
-      .json({ error: error.message });
-  }
-});
+//         console.log("Generated text to send to frontend:", generatedText); // Log the text being sent
+//         res.json({ generated_text: generatedText });
+//     } catch (error) {
+//         console.error("Backend error:", error); // Log error details
+//         res
+//             .status(error.response ? error.response.status : 500)
+//             .json({ error: error.message });
+//     }
+// });
 
 // Chat route to interact with Generative AI
-app.post("/chat", async (req, res) => {
-  const { message } = req.body;
+app.post("/chat", async(req, res) => {
+    const { message, userId } = req.body;
 
-  if (!message) {
-    return res.status(400).json({ error: "Message is required" });
-  }
+    if (!message || !userId) {
+        return res.status(400).json({ error: "Message and User ID are required" });
+    }
+    try {
+        // Generate content based on the message
+        const result = await model.generateContent(message);
+        const response = await result.response;
+        const text = await response.text();
 
-  try {
-    // Generate content based on the message
-    const result = await model.generateContent(message);
-    const response = await result.response;
-    const text = await response.text();
+        // Record the conversation in your database
+        await Chat.create({
+            userId: userId,
+            userMessage: message,
+            botReply: text,
+        });
 
-    res.json({ reply: text });
-  } catch (error) {
-    console.error("Error communicating with Generative AI:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
+        res.json({ reply: text });
+    } catch (error) {
+        console.error("Error communicating with Generative AI:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+app.get("/conversations/:userId", async(req, res) => {
+    const { userId } = req.params;
+
+    try {
+        const conversations = await Chat.find({ userId: userId }).sort({
+            createdAt: 1,
+        });
+        res.json(conversations);
+    } catch (error) {
+        console.error("Error fetching user conversations:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
 });
 
 app.use("/", userRoute);
